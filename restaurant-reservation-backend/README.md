@@ -232,7 +232,3 @@ npm run dev
 - Pagination and richer filtering on admin views
 - CI/CD pipeline
 
-
-## License
-
-This project is intended for educational and assessment purposes.
