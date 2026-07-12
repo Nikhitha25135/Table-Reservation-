@@ -1,220 +1,238 @@
-# Restaurant Reservation Management System — Backend
+# 🍽️ Restaurant Reservation Management System
 
-A RESTful backend for a single-restaurant table reservation system, built with
-Node.js, Express, and MongoDB (Mongoose). This package is **backend only**
-(no frontend, no deployment) — wire it up to any client or test it directly
-with curl/Postman.
+A full-stack Restaurant Reservation Management System built with **React, Node.js, Express, and MongoDB**. The application enables customers to reserve tables online while providing administrators with complete control over reservations and restaurant table management.
+
+This project was developed as part of a **Full-Stack Developer Assignment** and demonstrates backend API design, role-based authentication, reservation conflict handling, deployment, and frontend integration.
+
+## Live Demo
+
+- **Frontend:** https://table-reservation-sigma.vercel.app
+- **Backend API:** https://table-reservation-backend-idg2.onrender.com
+- **Swagger API Documentation:** https://table-reservation-backend-idg2.onrender.com/api-docs
 
 ## Tech Stack
 
-- Node.js + Express
-- MongoDB + Mongoose
-- JWT for authentication
-- bcryptjs for password hashing
-- express-validator for input validation
+**Frontend:** React, Vite, React Router, Axios, CSS
+
+**Backend:** Node.js, Express.js, MongoDB, Mongoose, JWT Authentication, bcryptjs, express-validator, Swagger
+
+**Deployment:** Vercel (Frontend), Render (Backend), MongoDB Atlas (Database)
+
+## System Architecture
+
+```
+                React Frontend
+                    (Vercel)
+                        │
+                        │ HTTPS
+                        ▼
+               Express REST API
+                  (Render)
+                        │
+         ┌──────────────┴──────────────┐
+         │                             │
+         ▼                             ▼
+ JWT Authentication             Reservation Logic
+         │                             │
+         └──────────────┬──────────────┘
+                        ▼
+                 MongoDB Atlas
+```
 
 ## Project Structure
 
 ```
-restaurant-reservation-backend/
-├── server.js                  # entry point
-├── src/
-│   ├── app.js                 # express app, middleware, route mounting
-│   ├── config/
-│   │   ├── db.js              # mongoose connection
-│   │   └── constants.js       # roles, time slots, reservation statuses
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Table.js
-│   │   └── Reservation.js
-│   ├── middleware/
-│   │   ├── authMiddleware.js  # protect (JWT) + authorize (role check)
-│   │   ├── validate.js        # express-validator error collector
-│   │   └── errorMiddleware.js # 404 + central error handler
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── tableController.js
-│   │   ├── reservationController.js  # customer-facing logic
-│   │   └── adminController.js        # admin-facing logic
-│   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── tableRoutes.js
-│   │   ├── reservationRoutes.js
-│   │   └── adminRoutes.js
-│   ├── utils/
-│   │   ├── asyncHandler.js
-│   │   ├── ApiError.js
-│   │   └── generateToken.js
-│   └── seed/
-│       └── seedTables.js      # seeds tables + a default admin user
-├── .env.example
-└── package.json
+Table-Reservation/
+│
+├── reservation-frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── vite.config.js
+│
+└── restaurant-reservation-backend/
+    ├── server.js
+    ├── src/
+    │   ├── config/
+    │   ├── controllers/
+    │   ├── middleware/
+    │   ├── models/
+    │   ├── routes/
+    │   ├── utils/
+    │   └── seed/
+    └── package.json
 ```
 
-## Setup Instructions
+## Features
 
-1. **Install dependencies**
-   ```bash
-   npm install
-   ```
+**Customer**
+- Registration & login with JWT authentication
+- Check table availability for a given date, time slot, and party size
+- Automatic table assignment, or manual table selection
+- Create, view, and cancel their own reservations
 
-2. **Configure environment variables**
-   Copy `.env.example` to `.env` and fill in the values:
-   ```bash
-   cp .env.example .env
-   ```
-   - `MONGO_URI` — connection string for a local or hosted MongoDB instance
-     (e.g. MongoDB Atlas)
-   - `JWT_SECRET` — any long random string
-   - `PORT` — defaults to 5000
+**Administrator**
+- Secure admin login
+- View all reservations, with filtering by date and status
+- Update or cancel any reservation
+- Create restaurant tables, update capacity, and deactivate tables
 
-3. **Seed the database** (creates 6 sample tables and a default admin account)
-   ```bash
-   npm run seed
-   ```
-   Default admin credentials: `admin@restaurant.com` / `Admin@123`
-   (change the password after first login, or edit `src/seed/seedTables.js`
-   before seeding).
+## Reservation Workflow
 
-4. **Run the server**
-   ```bash
-   npm run dev     # with nodemon, auto-restarts on changes
-   # or
-   npm start
-   ```
-   The API will be available at `http://localhost:5000/api`.
-   Health check: `GET /api/health`.
+1. Customer logs in
+2. Selects a reservation date, time slot, and number of guests
+3. Checks table availability for that combination
+4. Selects a table, or lets the system auto-assign one
+5. Confirms the reservation
 
-## API Documentation (Swagger)
-
-Interactive API docs are available once the server is running:
-
-- **Swagger UI:** `http://localhost:5000/api-docs`
-- **Raw OpenAPI 3.0 spec (JSON):** `http://localhost:5000/api-docs.json`
-
-To try protected routes from the UI: call `POST /auth/login`, copy the
-`token` from the response, click the **Authorize** button at the top of
-the Swagger UI page, and paste it in as `Bearer <token>`.
-
-The spec lives at `src/docs/openapi.json` — edit it directly if you add or
-change routes.
-
-## Assumptions Made
-
-- A **single restaurant** with a **fixed set of tables**, each with a fixed
-  seating capacity (seeded via `npm run seed`, or managed by an admin
-  through the table endpoints).
-- Reservations are booked against a **fixed list of time slots per day**
-  (see `src/config/constants.js`) rather than arbitrary start/end times.
-  This keeps overlap detection simple and unambiguous, and matches how most
-  small restaurants actually operate (seating windows, not continuous
-  scheduling). It also avoids timezone/duration edge cases that were out of
-  scope for this assignment.
-- `date` is stored as a plain `YYYY-MM-DD` string rather than a `Date`
-  object, since reservations are day-based, not timestamp-based. This
-  avoids timezone-conversion bugs entirely.
-- Any authenticated user can register as `customer`; the `role` field can
-  optionally be set to `admin` at registration for ease of testing/grading.
-  In a production system, admin accounts would be provisioned separately
-  (e.g. invite-only or created directly in the database).
-- Tables are **soft-deleted** (`isActive: false`) rather than hard-deleted,
-  so historical reservations always resolve to a valid table record.
-- Cancelled reservations free up their table/date/slot combination for
-  rebooking (the uniqueness constraint only applies to `confirmed`
-  reservations).
+The backend validates table capacity, existing reservations, double-booking, and reservation status before the reservation is created — the workflow above is just the UI path to the same checks described below.
 
 ## Reservation & Availability Logic
 
-This is the core evaluation area, so it's enforced at **two layers**:
+The reservation system uses a two-level validation strategy.
 
-1. **Application-level checks** (`reservationController.js`,
-   `adminController.js`):
-   - On creation, if a `tableId` is provided, the system checks that the
-     table is active, has sufficient capacity for the party size, and has
-     no existing `confirmed` reservation for that `date` + `timeSlot`.
-   - If no `tableId` is provided, the system **auto-assigns** the
-     smallest available table that can seat the party (`findAvailableTables`
-     in `reservationController.js`), so small parties don't block large
-     tables unnecessarily.
-   - Admin updates re-run the same conflict check when the date, time slot,
-     or table of a reservation changes.
+**Application-level validation.** Before creating a reservation, the backend confirms the table exists, is active, has sufficient capacity for the party size, and has no existing confirmed reservation for that date and time slot. If no table is selected, the backend automatically assigns the smallest available table that satisfies the guest count.
 
-2. **Database-level constraint** (`Reservation.js`):
-   - A **partial unique index** on `(table, date, timeSlot)`, scoped to
-     `status: 'confirmed'`, is the final safety net. Even if two requests
-     race past the application-level check simultaneously, MongoDB will
-     reject the second insert with a duplicate-key error, which the
-     central error handler converts into a clean `409 Conflict` response.
-   - This index also means cancelled reservations don't block a slot from
-     being rebooked, since the partial filter only counts `confirmed`
-     documents.
+**Database-level validation.** MongoDB enforces a partial unique index on `(table, date, timeSlot)`, scoped only to confirmed reservations. This is the final safety net: even if two requests pass the application-level check at nearly the same instant, the database itself rejects the second write, preventing race conditions and double bookings. Because the index only applies to confirmed reservations, cancelling a reservation immediately frees that table, date, and time slot for rebooking.
 
-Capacity is validated by comparing `guests` against the assigned table's
-`capacity` — a party of 5 can't be seated at a 4-top even if that table is
-otherwise free.
+## Role-Based Access (Customer vs Admin)
 
-`GET /api/reservations/availability?date=&timeSlot=&guests=` lets a client
-check open tables before committing to a booking.
+Two roles exist: `customer` and `admin`.
 
-## Role-Based Access Control
+Every reservation, table, and admin route requires a valid JWT — requests without one are rejected before reaching any business logic. Admin-only routes are grouped under their own route prefix and gated by a role check applied at the routing layer, not just inside individual controllers, so the admin surface is separated from customer-facing functionality by design rather than convention.
 
-Two roles: `customer` and `admin` (see `src/config/constants.js`).
+Customers can only view or cancel **their own** reservations — ownership is checked explicitly against the logged-in user's ID, independent of role. Administrators can view every reservation, filter by date or status, update or cancel any reservation, and manage the table inventory. The frontend mirrors this split with distinct, clearly-labelled views: a customer-facing booking screen, and a separate admin dashboard that's only reachable with an admin account.
 
-- **`protect` middleware** (`authMiddleware.js`) verifies the JWT from the
-  `Authorization: Bearer <token>` header and attaches the corresponding
-  user to `req.user`. All reservation/table/admin routes require this.
-- **`authorize(...roles)` middleware** restricts a route to specific
-  roles. Admin-only routes are mounted under `/api/admin/*` and every route
-  in `adminRoutes.js` runs `authorize('admin')`, keeping the admin surface
-  clearly separated from customer-facing routes at the routing level (not
-  just in controller logic).
-- Customers can only view/cancel **their own** reservations — ownership is
-  checked explicitly in `cancelMyReservation` by comparing
-  `reservation.user` to `req.user._id`, independent of the role check.
-- Admins can view, update, or cancel **any** reservation and manage the
-  table inventory.
+## Database Models
 
-## API Overview
+**User** — name, email, password (hashed), role
 
-| Method | Route                          | Access        | Description                          |
-|--------|--------------------------------|---------------|---------------------------------------|
-| POST   | /api/auth/register             | Public        | Register (customer or admin)          |
-| POST   | /api/auth/login                | Public        | Login, receive JWT                    |
-| GET    | /api/auth/me                   | Private       | Current user profile                  |
-| GET    | /api/tables                    | Private       | List active tables                    |
-| POST   | /api/tables                    | Admin         | Create a table                        |
-| PUT    | /api/tables/:id                | Admin         | Update a table                        |
-| DELETE | /api/tables/:id                | Admin         | Deactivate a table                    |
-| GET    | /api/reservations/availability | Private       | Check open tables for date/slot       |
-| POST   | /api/reservations              | Private       | Create a reservation                  |
-| GET    | /api/reservations/me            | Private       | List my reservations                  |
-| DELETE | /api/reservations/:id          | Private       | Cancel my reservation                 |
-| GET    | /api/admin/reservations        | Admin         | List all reservations (filter by ?date=, ?status=) |
-| GET    | /api/admin/reservations/:id    | Admin         | Get one reservation                   |
-| PUT    | /api/admin/reservations/:id    | Admin         | Update any reservation                |
-| DELETE | /api/admin/reservations/:id    | Admin         | Cancel any reservation                |
+**Table** — table number, capacity, active status
+
+**Reservation** — user, table, reservation date, time slot, number of guests, reservation status
+
+## REST API
+
+**Authentication**
+
+| Method | Endpoint |
+|---|---|
+| POST | /api/auth/register |
+| POST | /api/auth/login |
+| GET | /api/auth/me |
+
+**Tables**
+
+| Method | Endpoint |
+|---|---|
+| GET | /api/tables |
+| POST | /api/tables |
+| PUT | /api/tables/:id |
+| DELETE | /api/tables/:id |
+
+**Reservations**
+
+| Method | Endpoint |
+|---|---|
+| GET | /api/reservations/availability |
+| POST | /api/reservations |
+| GET | /api/reservations/me |
+| DELETE | /api/reservations/:id |
+
+**Admin**
+
+| Method | Endpoint |
+|---|---|
+| GET | /api/admin/reservations |
+| GET | /api/admin/reservations/:id |
+| PUT | /api/admin/reservations/:id |
+| DELETE | /api/admin/reservations/:id |
+
+Full interactive documentation is available via Swagger UI at `/api-docs` on the deployed backend (link above).
+
+## Local Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Nikhitha25135/Table-Reservation-.git
+```
+
+**Backend**
+
+```bash
+cd restaurant-reservation-backend
+npm install
+```
+
+Create a `.env` file:
+
+```env
+PORT=5000
+NODE_ENV=development
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_secret
+JWT_EXPIRES_IN=7d
+```
+
+```bash
+npm run seed
+npm run dev
+```
+
+**Frontend**
+
+```bash
+cd reservation-frontend
+npm install
+```
+
+Create a `.env` file:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+```bash
+npm run dev
+```
+
+## Assumptions
+
+- Single restaurant with a fixed number of tables and fixed seating capacities
+- Reservations use predefined time slots rather than arbitrary start/end times
+- Cancelled reservations immediately free their table for that date and slot
+- Admin accounts are provisioned the same way as customer accounts, for ease of testing and grading
+
+## Security
+
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based authorization at the routing layer
+- Environment variables for all secrets and connection strings
+- Input validation and centralized error handling
 
 ## Known Limitations
 
-- Time slots are a fixed enum rather than fully configurable/arbitrary
-  start-end times; a restaurant with variable seating durations would need
-  a more general interval-overlap model.
-- No pagination on list endpoints (`GET /api/admin/reservations`,
-  `GET /api/tables`) — fine for a single restaurant's data volume, but
-  would need it at scale.
-- No email/SMS confirmation or reminders (explicitly out of scope).
-- No refresh-token flow; JWTs simply expire after `JWT_EXPIRES_IN` and the
-  user must log in again.
-- No automated test suite included given the 48-hour scope.
+- Fixed reservation slots rather than fully configurable time ranges
+- No online payments
+- No email or SMS notifications
+- No refresh-token flow
+- No pagination on list endpoints
+- No automated test suite
 
-## Areas for Improvement (With More Time)
+## Future Improvements
 
-- Add integration tests (e.g. Jest + Supertest) covering the availability
-  and conflict-handling logic specifically, since that's the highest-risk
-  area.
-- Support configurable, arbitrary time ranges instead of fixed slots, with
-  proper interval-overlap queries.
-- Add pagination/sorting/filtering to list endpoints.
-- Add a refresh-token flow and password-reset support.
-- Add rate limiting on auth endpoints.
-- Add an audit log for admin actions (who cancelled/updated what, when).
+- Online payments
+- Email and SMS notifications
+- Dynamic, configurable time slots with real interval-overlap checking
+- Real-time availability updates
+- Waitlist management
+- Dashboard analytics
+- Pagination and richer filtering on admin views
+- CI/CD pipeline
+
+
+## License
+
+This project is intended for educational and assessment purposes.
