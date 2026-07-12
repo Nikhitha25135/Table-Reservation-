@@ -2,7 +2,7 @@ Restaurant Reservation Management System
 A full-stack system for managing table reservations at a single restaurant — customers can book, view, and cancel their own reservations; administrators have full visibility and control over every booking and the table inventory.
 Built for the Vibe Coding Intern assignment.
 
-GitHub repository: <add link here>
+GitHub repository:https://github.com/Nikhitha25135/Table-Reservation-.git
 Live deployment: <add link here>
 Default admin login (seeded): admin@restaurant.com / Admin@123
 
