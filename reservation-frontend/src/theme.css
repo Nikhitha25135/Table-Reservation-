@@ -1,0 +1,84 @@
+/*
+  Design concept: "The Ledger"
+  A maître d's reservation book, rendered digitally.
+  - Customer side reads like warm paper stock: a booking slip / ticket stub.
+  - Admin side reads like the ledger's ink side: a dense, ruled register.
+  - Signature element: reservation entries are drawn as perforated ticket
+    stubs, and table selection is a literal small map of the room.
+*/
+
+:root {
+  /* Color: named per the brief's own domain — paper, ink, brass fittings, wine, sage */
+  --paper: #f6f1e4;
+  --paper-dim: #ece4cf;
+  --paper-line: #d9cca8;
+  --ink: #23261f;
+  --ink-soft: #565947;
+  --ink-faint: #8b8d78;
+  --brass: #a6812e;
+  --brass-dark: #7e611f;
+  --wine: #7a2e2e;
+  --wine-dark: #5e2222;
+  --sage: #47593c;
+  --sage-bg: #e4ead9;
+  --wine-bg: #f3dfdc;
+
+  --display: 'Fraunces', 'Iowan Old Style', serif;
+  --body: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'IBM Plex Mono', 'SFMono-Regular', monospace;
+
+  --radius: 3px;
+  --shadow-card: 0 1px 2px rgba(35, 38, 31, 0.08), 0 6px 20px -8px rgba(35, 38, 31, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: var(--body);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

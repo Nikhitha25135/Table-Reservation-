@@ -1,0 +1,431 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Restaurant Reservation Management System API",
+    "version": "1.0.0",
+    "description": "REST API for a single-restaurant table reservation system. Use POST /api/auth/login to get a JWT, then click 'Authorize' and paste it as `Bearer <token>` to try protected routes."
+  },
+  "servers": [
+    { "url": "http://localhost:5000/api", "description": "Local development server" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Registration, login, and current-user profile" },
+    { "name": "Tables", "description": "Restaurant table inventory" },
+    { "name": "Reservations", "description": "Customer-facing reservation actions" },
+    { "name": "Admin", "description": "Admin-only reservation oversight" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "64f1a2b3c4d5e6f7a8b9c0d1" },
+          "name": { "type": "string", "example": "Jane Doe" },
+          "email": { "type": "string", "example": "jane@example.com" },
+          "role": { "type": "string", "enum": ["customer", "admin"], "example": "customer" }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": { "$ref": "#/components/schemas/User" },
+              "token": { "type": "string", "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+            }
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": ["name", "email", "password"],
+        "properties": {
+          "name": { "type": "string", "example": "Jane Doe" },
+          "email": { "type": "string", "example": "jane@example.com" },
+          "password": { "type": "string", "minLength": 6, "example": "secret123" },
+          "role": { "type": "string", "enum": ["customer", "admin"], "example": "customer" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "example": "jane@example.com" },
+          "password": { "type": "string", "example": "secret123" }
+        }
+      },
+      "Table": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "64f1a2b3c4d5e6f7a8b9c0d2" },
+          "tableNumber": { "type": "integer", "example": 3 },
+          "capacity": { "type": "integer", "example": 4 },
+          "isActive": { "type": "boolean", "example": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TableCreateRequest": {
+        "type": "object",
+        "required": ["tableNumber", "capacity"],
+        "properties": {
+          "tableNumber": { "type": "integer", "example": 7 },
+          "capacity": { "type": "integer", "example": 4 }
+        }
+      },
+      "TableUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "tableNumber": { "type": "integer", "example": 7 },
+          "capacity": { "type": "integer", "example": 6 },
+          "isActive": { "type": "boolean", "example": true }
+        }
+      },
+      "Reservation": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string", "example": "64f1a2b3c4d5e6f7a8b9c0d3" },
+          "user": { "type": "string", "example": "64f1a2b3c4d5e6f7a8b9c0d1" },
+          "table": { "$ref": "#/components/schemas/Table" },
+          "date": { "type": "string", "example": "2026-08-01" },
+          "timeSlot": {
+            "type": "string",
+            "enum": ["11:00-12:30", "12:30-14:00", "14:00-15:30", "18:00-19:30", "19:30-21:00", "21:00-22:30"],
+            "example": "19:30-21:00"
+          },
+          "guests": { "type": "integer", "example": 4 },
+          "status": { "type": "string", "enum": ["confirmed", "cancelled"], "example": "confirmed" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ReservationCreateRequest": {
+        "type": "object",
+        "required": ["date", "timeSlot", "guests"],
+        "properties": {
+          "date": { "type": "string", "example": "2026-08-01" },
+          "timeSlot": {
+            "type": "string",
+            "enum": ["11:00-12:30", "12:30-14:00", "14:00-15:30", "18:00-19:30", "19:30-21:00", "21:00-22:30"],
+            "example": "19:30-21:00"
+          },
+          "guests": { "type": "integer", "example": 4 },
+          "tableId": {
+            "type": "string",
+            "description": "Optional. If omitted, the smallest available table that fits the party is auto-assigned.",
+            "example": "64f1a2b3c4d5e6f7a8b9c0d2"
+          }
+        }
+      },
+      "ReservationUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "example": "2026-08-02" },
+          "timeSlot": {
+            "type": "string",
+            "enum": ["11:00-12:30", "12:30-14:00", "14:00-15:30", "18:00-19:30", "19:30-21:00", "21:00-22:30"]
+          },
+          "guests": { "type": "integer", "example": 5 },
+          "tableId": { "type": "string" },
+          "status": { "type": "string", "enum": ["confirmed", "cancelled"] }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "Descriptive error message" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Validation error",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Unauthorized": {
+        "description": "Missing or invalid authentication token",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Forbidden": {
+        "description": "Authenticated but not permitted to perform this action",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Conflict": {
+        "description": "Booking conflict (table already reserved for that date/time slot)",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Health check",
+        "responses": { "200": { "description": "API is up" } }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login and receive a JWT",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Get the current authenticated user's profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/tables": {
+      "get": {
+        "tags": ["Tables"],
+        "summary": "List tables (active by default)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "includeInactive",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["true", "false"] },
+            "description": "Set to 'true' to include deactivated tables"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of tables",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Table" } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      },
+      "post": {
+        "tags": ["Tables"],
+        "summary": "Create a table (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TableCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Table created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Table" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/tables/{id}": {
+      "put": {
+        "tags": ["Tables"],
+        "summary": "Update a table (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TableUpdateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Table updated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Table" } } }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "tags": ["Tables"],
+        "summary": "Deactivate a table (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Table deactivated" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/reservations/availability": {
+      "get": {
+        "tags": ["Reservations"],
+        "summary": "Check which tables are available for a date/time slot/party size",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "example": "2026-08-01" } },
+          { "name": "timeSlot", "in": "query", "required": true, "schema": { "type": "string", "example": "19:30-21:00" } },
+          { "name": "guests", "in": "query", "required": true, "schema": { "type": "integer", "example": 4 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available tables",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Table" } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/reservations": {
+      "post": {
+        "tags": ["Reservations"],
+        "summary": "Create a reservation for the logged-in customer",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReservationCreateRequest" } } }
+        },
+        "responses": {
+          "201": {
+            "description": "Reservation created",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reservation" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      }
+    },
+    "/reservations/me": {
+      "get": {
+        "tags": ["Reservations"],
+        "summary": "Get the logged-in customer's own reservations",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of reservations",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Reservation" } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/reservations/{id}": {
+      "delete": {
+        "tags": ["Reservations"],
+        "summary": "Cancel my own reservation",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Reservation cancelled" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/admin/reservations": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List all reservations (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "example": "2026-08-01" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["confirmed", "cancelled"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all reservations",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Reservation" } } } }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/admin/reservations/{id}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get a single reservation by id (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": {
+            "description": "Reservation",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reservation" } } }
+          },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Update any reservation (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ReservationUpdateRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "Reservation updated",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Reservation" } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Cancel any reservation (admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Reservation cancelled" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  }
+}
